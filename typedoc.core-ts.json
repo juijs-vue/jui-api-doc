@@ -1,0 +1,13 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "entryPoints": ["../jui-core-ts/src/index.ts"],
+    "tsconfig": "../jui-core-ts/tsconfig.build.json",
+    "out": "core-ts",
+    "docsRoot": ".",
+    "plugin": ["typedoc-plugin-markdown", "typedoc-vitepress-theme"],
+    "sanitizeComments": true,
+    "name": "jui-core-ts",
+    "readme": "none",
+    "hidePageHeader": true,
+    "hideBreadcrumbs": true
+}

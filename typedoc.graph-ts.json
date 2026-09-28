@@ -1,0 +1,13 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "entryPoints": ["../jui-graph-ts/src/index.ts"],
+    "tsconfig": "../jui-graph-ts/tsconfig.lib.json",
+    "out": "graph-ts",
+    "docsRoot": ".",
+    "plugin": ["typedoc-plugin-markdown", "typedoc-vitepress-theme"],
+    "sanitizeComments": true,
+    "name": "jui-graph-ts",
+    "readme": "none",
+    "hidePageHeader": true,
+    "hideBreadcrumbs": true
+}

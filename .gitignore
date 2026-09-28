@@ -1,0 +1,8 @@
+node_modules/
+core-ts/
+graph-ts/
+chart-vue-register/
+components/*/*.md
+.vitepress/cache
+.vitepress/dist
+dist/

@@ -1,0 +1,13 @@
+.gcloudignore
+.git
+.gitignore
+node_modules/
+core-ts/
+graph-ts/
+components/*/*.md
+.vitepress/cache
+scripts/
+typedoc.*.json
+package.json
+package-lock.json
+*.md

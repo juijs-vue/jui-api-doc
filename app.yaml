@@ -1,0 +1,21 @@
+runtime: python312
+service: docs
+
+handlers:
+  # Directory-style URLs ("/", "/core-ts/", "/graph-ts/jui-graph-ts/namespaces/domUtil/") ->
+  # that directory's index.html, matching what a normal static file server does implicitly.
+  - url: /(.*/)?$
+    static_files: dist/\1index.html
+    upload: dist/(.*/)?index\.html$
+    secure: always
+
+  # Everything else VitePress actually emits: page files (.html) and build assets (.css/.js/
+  # .json/.woff2). Internal VitePress links already point at the real .html path (confirmed via
+  # local verification), so no clean-URL rewriting is needed beyond the directory-index rule above.
+  - url: /(.*\.(css|js|json|woff2|html))$
+    static_files: dist/\1
+    upload: dist/.*\.(css|js|json|woff2|html)$
+    secure: always
+
+automatic_scaling:
+  max_instances: 2

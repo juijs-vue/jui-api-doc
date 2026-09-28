@@ -1,0 +1,19 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "entryPoints": ["../jui-chart-vue/src/register"],
+    "entryPointStrategy": "expand",
+    "exclude": [
+        "../jui-chart-vue/src/register/**/*.spec.ts",
+        "../jui-chart-vue/src/register/brush/canvas/testCanvasStub.ts",
+        "../jui-chart-vue/src/register/brush/map/testMapXhrStub.ts"
+    ],
+    "tsconfig": "../jui-chart-vue/tsconfig.doc-register.json",
+    "out": "chart-vue-register",
+    "docsRoot": ".",
+    "plugin": ["typedoc-plugin-markdown", "typedoc-vitepress-theme"],
+    "sanitizeComments": true,
+    "name": "jui-chart-vue (brush/widget/grid/theme/icon/pattern)",
+    "readme": "none",
+    "hidePageHeader": true,
+    "hideBreadcrumbs": true
+}
