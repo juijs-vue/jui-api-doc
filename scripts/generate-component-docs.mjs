@@ -56,6 +56,14 @@ function renderMarkdown(name, meta, file) {
     // rather than lose it, parse it directly out of the `defineEmits<{...}>()` block's source text
     // and use it as a fallback wherever vue-component-meta's own description is empty.
     const emitDescriptions = extractEmitDescriptions(file)
+    // Same class of workaround, for a different reason: these components declare their slots only
+    // via `<slot name="...">` in the template (no `defineSlots<{...}>()` type literal), so there's
+    // no TS declaration for vue-component-meta to read a JSDoc comment from at all - not a tooling
+    // gap, just nowhere to put one. Rather than introduce `defineSlots<{...}>()` everywhere (a much
+    // bigger, unnecessary change just to get a doc string), parse the HTML comment directly above
+    // each `<slot>` tag in the template instead - same lightweight source-of-truth approach as the
+    // emits workaround above.
+    const slotDescriptions = extractSlotDescriptions(file)
 
     const lines = [`# ${name}`, ""]
     const table = (title, rows, cols) => {
@@ -80,7 +88,7 @@ function renderMarkdown(name, meta, file) {
     )
     table(
         "Slots",
-        (meta.slots ?? []).map((s) => [`\`${s.name}\``, esc(s.description ?? "")]),
+        (meta.slots ?? []).map((s) => [`\`${s.name}\``, esc(s.description || slotDescriptions[s.name] || "")]),
         ["Name", "Description"]
     )
     table(
@@ -131,6 +139,35 @@ function extractEmitDescriptions(file) {
             .replace(/\s+/g, " ")
             .trim()
         descriptions[m[2]] = cleaned
+    }
+    return descriptions
+}
+
+/** Parses every static `<slot name="...">` (and the unnamed/`default` `<slot>`) directly out of
+ * the component's `<template>` and returns a `{ slotName: description }` map, taken from the
+ * nearest preceding HTML comment (`<!-- ... -->`) separated from the `<slot` tag only by
+ * whitespace - see the WORKAROUND note in `renderMarkdown()`. A dynamic name (`:name="..."`) is
+ * skipped, since it can't be resolved to a fixed string statically (matches what
+ * vue-component-meta itself reports for such slots). If the same slot name appears more than once
+ * (e.g. a slot reused across two rendering modes), the first commented occurrence wins. */
+function extractSlotDescriptions(file) {
+    const src = fs.readFileSync(file, "utf8")
+    const descriptions = {}
+    const slotRe = /<slot\b([^>]*)>/g
+    let m
+    while ((m = slotRe.exec(src))) {
+        const attrs = m[1]
+        if (/:name\s*=/.test(attrs)) continue // dynamic slot name - not statically resolvable
+
+        const nameMatch = attrs.match(/\bname="([\w-]+)"/)
+        const name = nameMatch ? nameMatch[1] : "default"
+        if (descriptions[name]) continue
+
+        const before = src.slice(0, m.index)
+        const commentMatch = before.match(/<!--([\s\S]*?)-->\s*$/)
+        if (!commentMatch) continue
+
+        descriptions[name] = commentMatch[1].trim().replace(/\s+/g, " ")
     }
     return descriptions
 }
