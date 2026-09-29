@@ -100,7 +100,18 @@ function renderMarkdown(name, meta, file) {
 }
 
 function esc(t) {
-    return String(t).replace(/\|/g, "\\|").replace(/\n/g, " ")
+    // VitePress compiles each markdown page into a Vue SFC, so a literal `{{ ... }}` anywhere in
+    // the body (not just inside a fenced/inline code span) gets parsed as a real Vue interpolation
+    // expression - a description that quotes actual template syntax (e.g. "the default
+    // `{{ x.title }}` label") crashed the SSR build with a real, silent-looking failure (the build
+    // still printed "build complete", the error only showed up in the log above it - always read
+    // the actual build output, not just its exit status). Escape the braces as HTML entities so
+    // they render as literal text instead of being interpreted.
+    return String(t)
+        .replace(/\|/g, "\\|")
+        .replace(/\n/g, " ")
+        .replace(/\{\{/g, "&#123;&#123;")
+        .replace(/\}\}/g, "&#125;&#125;")
 }
 
 /** Parses `defineEmits<{ ... }>()`'s type-literal body directly out of the component's source and
@@ -163,11 +174,22 @@ function extractSlotDescriptions(file) {
         const name = nameMatch ? nameMatch[1] : "default"
         if (descriptions[name]) continue
 
+        // BUG TRAP (caught only by actually building the site, not by checking for non-empty
+        // descriptions): `before.match(/<!--([\s\S]*?)-->\s*$/)` looks non-greedy, but
+        // String.prototype.match still finds the LEFTMOST possible match start in the whole file,
+        // not the nearest one to the slot - so it swallowed everything from the very FIRST `<!--`
+        // in the file through to the last `-->` right before this slot, dumping raw Vue template
+        // markup (including `{{ }}` expressions) into the doc table and crashing VitePress's SSR
+        // render. Anchor from the END instead: find the last `-->` before the slot, require only
+        // whitespace between it and the slot tag, then find ITS matching `<!--` going backward.
         const before = src.slice(0, m.index)
-        const commentMatch = before.match(/<!--([\s\S]*?)-->\s*$/)
-        if (!commentMatch) continue
+        const lastCommentEnd = before.lastIndexOf("-->")
+        if (lastCommentEnd === -1) continue
+        if (!/^\s*$/.test(before.slice(lastCommentEnd + 3))) continue
+        const lastCommentStart = before.lastIndexOf("<!--", lastCommentEnd)
+        if (lastCommentStart === -1) continue
 
-        descriptions[name] = commentMatch[1].trim().replace(/\s+/g, " ")
+        descriptions[name] = before.slice(lastCommentStart + 4, lastCommentEnd).trim().replace(/\s+/g, " ")
     }
     return descriptions
 }
